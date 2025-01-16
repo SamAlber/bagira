@@ -2,7 +2,10 @@ trigger:
 - main
 
 pool:
-  vmImage: 'windows-latest'
+  name: 'Default'  # Replace 'Default' with the name of your agent pool if it's custom
+  demands:
+  - agent.name -equals DESKTOP-7HI2KQN
+
 
 steps:
 - task: UsePythonVersion@0
