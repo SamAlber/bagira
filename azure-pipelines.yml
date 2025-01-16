@@ -11,7 +11,7 @@ steps:
 - task: UsePythonVersion@0
   displayName: 'Set up Python'
   inputs:
-    versionSpec: '3.x'
+    versionSpec: '3.12.4'
     addToPath: true
 
 - script: |
