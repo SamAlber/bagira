@@ -20,18 +20,22 @@ steps:
     copy output.txt C:\IT\
   displayName: 'Copy Artifacts to C:\\IT'
 
-- script: |
-    $versionStampFile = "C:\IT\txt.VersionStamp"
-    $currentVersion = "1.0.0"
-    $newVersion = [Version]::Parse($currentVersion).IncrementBuild()
-    Set-Content $versionStampFile "$newVersion"
-    echo "##vso[task.setvariable variable=versionNumber]$newVersion"
+- task: PowerShell@2
   displayName: 'Create Version Stamp'
+  inputs:
+    targetType: inline
+    script: |
+      $versionStampFile = "C:\IT\txt.VersionStamp"
+      $currentVersion = "1.0.0"
+      # Increment version logic (you can enhance this for your use case)
+      $newVersion = $currentVersion -replace '\d+$', { [int]$_ + 1 }
+      Set-Content -Path $versionStampFile -Value $newVersion
+      Write-Host "Version stamp updated to: $newVersion"
 
 - task: PowerShell@2
   displayName: 'Send Email Notification (Optional)'
   inputs:
-    targetType: 'inline'
+    targetType: inline
     script: |
       $to = "your_email@example.com"
       $from = "azure_devops@example.com"
