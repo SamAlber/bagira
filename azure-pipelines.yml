@@ -7,7 +7,7 @@ pool:
   - agent.name -equals DESKTOP-7HI2KQN
 
 variables:
-- group: EmailCredentials  # Link the variable group for SMTP
+- group: EmailCredentials  # Link the variable group for SMTP #
 
 steps:
 # Step 1: Set up the Java environment
