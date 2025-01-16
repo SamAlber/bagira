@@ -29,7 +29,7 @@ steps:
 
 - script: |
     mkdir C:\IT
-    copy output.txt C:\IT\
+    copy /Y output.txt C:\IT\
   displayName: 'Copy Artifacts to C:\\IT'
 
 - task: PowerShell@2
