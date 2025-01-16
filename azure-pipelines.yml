@@ -1,73 +1,67 @@
-# Trigger the pipeline when changes are pushed to the 'main' branch
 trigger:
 - main
 
-# Specify the pool to use for running the pipeline
 pool:
-  name: 'Default'  # Use the default agent pool for the self-hosted agent
+  name: 'Default'  
   demands:
-  - agent.name -equals DESKTOP-7HI2KQN  # Ensure the pipeline runs only on the specified agent
+  - agent.name -equals DESKTOP-7HI2KQN
 
-# Define variables, including a variable group for storing secure credentials
 variables:
-- group: EmailCredentials  # Reference the variable group containing email credentials (EmailUsername and EmailPassword)
+- group: EmailCredentials  # Link the variable group
 
 steps:
-# Step 1: Verify that Python is correctly installed on the agent
 - script: |
     python --version
-  displayName: 'Set Up and Verify Local Python'  # Output the Python version to confirm the setup
+  displayName: 'Set Up and Verify Local Python'
 
-# Step 2: Run the Python script
 - script: |
     python main.py
-  displayName: 'Run Python Script'  # Execute the Python script (main.py)
+  displayName: 'Run Python Script'
 
-# Step 3: Copy the generated output file to the target directory
 - script: |
-    mkdir C:\IT  # Create the target directory if it doesn't exist
-    copy output.txt C:\IT\  # Copy the output file to C:\IT
-  displayName: 'Copy Artifacts to C:\\IT'  # Describe the artifact copy step
+    mkdir C:\IT
+    copy output.txt C:\IT\
+  displayName: 'Copy Artifacts to C:\\IT'
 
-# Step 4: Create or update a version stamp
-- task: PowerShell@2  # Use a PowerShell script to handle this step
+- task: PowerShell@2
   displayName: 'Create Version Stamp'
   inputs:
     targetType: inline
     script: |
-      $versionStampFile = "C:\IT\VersionStamp.txt"  # Path to the version stamp file
-      $currentVersion = "1.0.0"  # Initialize the current version
+      $versionStampFile = "C:\IT\VersionStamp.txt"
+      $currentVersion = "1.0.0"
+
+      # Split the version string into parts
+      $versionParts = $currentVersion.Split('.')
+      $versionParts[2] = [int]$versionParts[2] + 1  # Increment the last part
+      $newVersion = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])"
 
       # Split the version into components (major.minor.patch) and increment the patch version
       # Example: For $currentVersion = "1.0.0":
       # $versionParts = $currentVersion.Split('.') => @("1", "0", "0")
       # $versionParts[2] = [int]$versionParts[2] + 1 increments the patch => @("1", "0", "1")
       # $newVersion = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])" reconstructs the version => "1.0.1"
-      $versionParts = $currentVersion.Split('.')
-      $versionParts[2] = [int]$versionParts[2] + 1  # Increment the patch version
-      $newVersion = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])"
 
-      Set-Content -Path $versionStampFile -Value $newVersion  # Save the updated version to the file
-      Write-Host "Version stamp updated to: $newVersion"  # Log the new version
-      Write-Host "##vso[task.setvariable variable=versionNumber]$newVersion"  # Set the new version as a pipeline variable
+      Set-Content -Path $versionStampFile -Value $newVersion
+      Write-Host "Version stamp updated to: $newVersion"
+      Write-Host "##vso[task.setvariable variable=versionNumber]$newVersion"
 
-# Step 5: Send an email notification
 - task: PowerShell@2
-  displayName: 'Send Email Notification (Optional)'  # Describe the email notification step
+  displayName: 'Send Email Notification (Optional)'
   inputs:
     targetType: inline
     script: |
-      $to = "sam.albershtein@gmail.com"  # Recipient email address
-      $from = "$(EmailUsername)"  # Sender email address from secure pipeline variable
+      $to = "sam.albershtein@gmail.com"
+      $from = "$(EmailUsername)"
       $subject = "Pipeline Run Status"
-      $body = "Pipeline ran successfully. New version: $(versionNumber)"  # Email body with the new version
-      $smtpServer = "smtp.gmail.com"  # Gmail SMTP server
-      $smtpPort = 587  # SMTP port for secure email transmission
-      $username = "$(EmailUsername)"  # Username for Gmail (secure variable)
-      $password = "$(EmailPassword)"  # App-specific password for Gmail (secure variable)
-      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force  # Convert password to a secure string
-      $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)  # Create credential object
+      $body = "Pipeline ran successfully. New version: $(versionNumber)"
+      $smtpServer = "smtp.gmail.com"
+      $smtpPort = 587
+      $username = "$(EmailUsername)"
+      $password = "$(EmailPassword)"
+      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+      $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
 
-      # Send the email using the configured SMTP server and credentials
       Send-MailMessage -To $to -From $from -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $credential
-  condition: succeeded()  # Only send the email if the pipeline succeeds
+  condition: succeeded()
+
