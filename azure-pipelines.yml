@@ -6,6 +6,9 @@ pool:
   demands:
   - agent.name -equals DESKTOP-7HI2KQN
 
+variables:
+- group: EmailCredentials  # Link the variable group
+
 steps:
 - script: |
     python --version
@@ -27,13 +30,10 @@ steps:
     script: |
       $versionStampFile = "C:\IT\txt.VersionStamp"
       $currentVersion = "1.0.0"
-      # Increment version logic
       $newVersion = $currentVersion -replace '\d+$', { [int]$_ + 1 }
       Set-Content -Path $versionStampFile -Value $newVersion
       Write-Host "Version stamp updated to: $newVersion"
-      # Set versionNumber as a pipeline variable
       Write-Host "##vso[task.setvariable variable=versionNumber]$newVersion"
-
 
 - task: PowerShell@2
   displayName: 'Send Email Notification (Optional)'
@@ -41,9 +41,15 @@ steps:
     targetType: inline
     script: |
       $to = "sam.albershtein@gmail.com"
-      $from = "azure_devops@example.com"
+      $from = "$(EmailUsername)"  # Using the secure variable
       $subject = "Pipeline Run Status"
       $body = "Pipeline ran successfully. New version: $(versionNumber)"
-      $smtpServer = "smtp.example.com"
-      Send-MailMessage -To $to -From $from -Subject $subject -Body $body -SmtpServer $smtpServer
+      $smtpServer = "smtp.gmail.com"
+      $smtpPort = 587
+      $username = "$(EmailUsername)"  # Using the secure variable
+      $password = "$(EmailPassword)"  # Using the secure variable
+      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+      $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+
+      Send-MailMessage -To $to -From $from -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $credential
   condition: succeeded()
