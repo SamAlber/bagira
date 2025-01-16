@@ -2,26 +2,14 @@ trigger:
 - main
 
 pool:
-  name: 'Default'  # Replace 'Default' with the name of your agent pool if it's custom
+  name: 'Default'  
   demands:
   - agent.name -equals DESKTOP-7HI2KQN
 
 steps:
-
 - script: |
     python --version
-  displayName: 'Verify Python Installation'
-  
-- task: UsePythonVersion@0
-  displayName: 'Set up Python'
-  inputs:
-    versionSpec: '3.12.4'
-    addToPath: true
-
-- script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install Dependencies'
+  displayName: 'Set Up and Verify Local Python'
 
 - script: |
     python main.py
