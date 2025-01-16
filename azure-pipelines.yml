@@ -29,12 +29,21 @@ steps:
     targetType: inline
     script: |
       $versionStampFile = "C:\IT\VersionStamp.txt"
-      $currentVersion = "1.0.0"
 
-      # Split the version string into parts
+      # Check if the version stamp file exists
+      if (Test-Path $versionStampFile) {
+          # Read the current version from the file
+          $currentVersion = Get-Content $versionStampFile
+      } else {
+          # Default to 1.0.0 if the file doesn't exist
+          $currentVersion = "1.0.0"
+      }
+
+      # Split the version string into parts (major.minor.patch)
       $versionParts = $currentVersion.Split('.')
-      $versionParts[2] = [int]$versionParts[2] + 1  # Increment the last part
-      $newVersion = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])"
+      $major = [int]$versionParts[0]
+      $minor = [int]$versionParts[1]
+      $patch = [int]$versionParts[2]
 
       # Split the version into components (major.minor.patch) and increment the patch version
       # Example: For $currentVersion = "1.0.0":
@@ -42,9 +51,27 @@ steps:
       # $versionParts[2] = [int]$versionParts[2] + 1 increments the patch => @("1", "0", "1")
       # $newVersion = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])" reconstructs the version => "1.0.1"
 
+      # Increment the version
+      $patch += 1  # Increment the patch version
+      if ($patch -ge 10) {
+          $patch = 0
+          $minor += 1  # Roll over to the next minor version
+      }
+      if ($minor -ge 10) {
+          $minor = 0
+          $major += 1  # Roll over to the next major version
+      }
+
+      # Construct the new version
+      $newVersion = "$major.$minor.$patch"
+
+      # Save the new version to the file
       Set-Content -Path $versionStampFile -Value $newVersion
+
+      # Log the new version and set it as a pipeline variable
       Write-Host "Version stamp updated to: $newVersion"
       Write-Host "##vso[task.setvariable variable=versionNumber]$newVersion"
+
 
 - task: PowerShell@2
   displayName: 'Send Email Notification (Optional)'
