@@ -6,8 +6,12 @@ pool:
   demands:
   - agent.name -equals DESKTOP-7HI2KQN
 
-
 steps:
+
+- script: |
+    python --version
+  displayName: 'Verify Python Installation'
+  
 - task: UsePythonVersion@0
   displayName: 'Set up Python'
   inputs:
