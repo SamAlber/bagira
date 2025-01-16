@@ -10,13 +10,22 @@ variables:
 - group: EmailCredentials  # Link the variable group
 
 steps:
+# Step 1: Set up the Java environment
 - script: |
-    python --version
-  displayName: 'Set Up and Verify Local Python'
+    java -version
+    javac -version
+  displayName: 'Verify Java Installation'
 
+# Step 2: Compile the Java project
 - script: |
-    python main.py
-  displayName: 'Run Python Script'
+    mkdir build
+    javac -d build src/*.java
+  displayName: 'Compile Java Project'
+
+# Step 3: Run the compiled Java program
+- script: |
+    java -cp build Main
+  displayName: 'Run Compiled Java Program'
 
 - script: |
     mkdir C:\IT
@@ -74,7 +83,7 @@ steps:
 
 
 - task: PowerShell@2
-  displayName: 'Send Email Notification (Optional)'
+  displayName: 'Send Email Notification'
   inputs:
     targetType: inline
     script: |
