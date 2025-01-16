@@ -19,7 +19,7 @@ steps:
 # Step 2: Compile the Java project
 - script: |
     mkdir build
-    javac -d build src/*.java
+    javac -d build Main.java
   displayName: 'Compile Java Project'
 
 # Step 3: Run the compiled Java program
