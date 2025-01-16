@@ -1,0 +1,47 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Set up Python'
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install Dependencies'
+
+- script: |
+    python main.py
+  displayName: 'Run Python Script'
+
+- script: |
+    mkdir C:\IT
+    copy output.txt C:\IT\
+  displayName: 'Copy Artifacts to C:\\IT'
+
+- script: |
+    $versionStampFile = "C:\IT\txt.VersionStamp"
+    $currentVersion = "1.0.0"
+    $newVersion = [Version]::Parse($currentVersion).IncrementBuild()
+    Set-Content $versionStampFile "$newVersion"
+    echo "##vso[task.setvariable variable=versionNumber]$newVersion"
+  displayName: 'Create Version Stamp'
+
+- task: PowerShell@2
+  displayName: 'Send Email Notification (Optional)'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $to = "your_email@example.com"
+      $from = "azure_devops@example.com"
+      $subject = "Pipeline Run Status"
+      $body = "Pipeline ran successfully. New version: $(versionNumber)"
+      $smtpServer = "smtp.example.com"
+      Send-MailMessage -To $to -From $from -Subject $subject -Body $body -SmtpServer $smtpServer
+  condition: succeeded()
