@@ -27,17 +27,20 @@ steps:
     script: |
       $versionStampFile = "C:\IT\txt.VersionStamp"
       $currentVersion = "1.0.0"
-      # Increment version logic (you can enhance this for your use case)
+      # Increment version logic
       $newVersion = $currentVersion -replace '\d+$', { [int]$_ + 1 }
       Set-Content -Path $versionStampFile -Value $newVersion
       Write-Host "Version stamp updated to: $newVersion"
+      # Set versionNumber as a pipeline variable
+      Write-Host "##vso[task.setvariable variable=versionNumber]$newVersion"
+
 
 - task: PowerShell@2
   displayName: 'Send Email Notification (Optional)'
   inputs:
     targetType: inline
     script: |
-      $to = "your_email@example.com"
+      $to = "sam.albershtein@gmail.com"
       $from = "azure_devops@example.com"
       $subject = "Pipeline Run Status"
       $body = "Pipeline ran successfully. New version: $(versionNumber)"
