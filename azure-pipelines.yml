@@ -52,7 +52,7 @@ steps:
 
       # Split the current version string into components: major, minor, and patch
       $versionParts = $currentVersion.Split('.')  # Example: "1.0.0" -> @("1", "0", "0")
-      $major = [int]$versionParts[0]  # Extract the major version (e.g., 1)
+      $major = [int]$versionParts[0]  # Extract the major version (e.g., 1) - 
       $minor = [int]$versionParts[1]  # Extract the minor version (e.g., 0)
       $patch = [int]$versionParts[2]  # Extract the patch version (e.g., 0)
 
