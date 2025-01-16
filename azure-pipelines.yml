@@ -1,103 +1,101 @@
 trigger:
-- main
+- main  # The pipeline will be triggered when changes are pushed to the 'main' branch
 
 pool:
-  name: 'Default'  
+  name: 'Default'  # Use the default agent pool for running the pipeline
   demands:
-  - agent.name -equals DESKTOP-7HI2KQN
+  - agent.name -equals DESKTOP-7HI2KQN  # Ensure the pipeline runs only on the specified self-hosted agent
 
 variables:
-- group: EmailCredentials  # Link the variable group
+- group: EmailCredentials  # Link the variable group containing secure email credentials (EmailUsername and EmailPassword)
 
 steps:
-# Step 1: Set up the Java environment
+# Step 1: Verify Java Installation
 - script: |
-    java -version
-    javac -version
+    java -version  # Check the installed version of Java
+    javac -version  # Check the installed version of the Java compiler
   displayName: 'Verify Java Installation'
 
-# Step 2: Compile the Java project
+# Step 2: Compile the Java Project
 - script: |
-    mkdir build
-    javac -d build Main.java
+    mkdir build  # Create a directory named 'build' for compiled files
+    javac -d build Main.java  # Compile Main.java and place the resulting .class file(s) in the 'build' directory
   displayName: 'Compile Java Project'
 
-# Step 3: Run the compiled Java program
+# Step 3: Run the Compiled Java Program
 - script: |
-    java -cp build Main
+    java -cp build Main  # Run the compiled Main.class file from the 'build' directory
   displayName: 'Run Compiled Java Program'
 
+# Step 4: Copy Output Artifacts
 - script: |
-    mkdir C:\IT
-    copy output.txt C:\IT\
+    mkdir C:\IT  # Create the target directory (C:\IT) if it doesn't exist
+    copy output.txt C:\IT\  # Copy the output.txt file to C:\IT
   displayName: 'Copy Artifacts to C:\\IT'
 
+# Step 5: Create Version Stamp
 - task: PowerShell@2
   displayName: 'Create Version Stamp'
   inputs:
     targetType: inline
     script: |
-      $versionStampFile = "C:\IT\VersionStamp.txt"
+      $versionStampFile = "C:\IT\VersionStamp.txt"  # Define the file path for storing the version stamp
 
-      # Check if the version stamp file exists
+      # Check if the version stamp file already exists
       if (Test-Path $versionStampFile) {
-          # Read the current version from the file
+          # If the file exists, read the current version from the file
           $currentVersion = Get-Content $versionStampFile
       } else {
-          # Default to 1.0.0 if the file doesn't exist
+          # If the file doesn't exist, initialize the version as 1.0.0
           $currentVersion = "1.0.0"
       }
 
-      # Split the version string into parts (major.minor.patch)
-      $versionParts = $currentVersion.Split('.')
-      $major = [int]$versionParts[0]
-      $minor = [int]$versionParts[1]
-      $patch = [int]$versionParts[2]
+      # Split the current version string into components: major, minor, and patch
+      $versionParts = $currentVersion.Split('.')  # Example: "1.0.0" -> @("1", "0", "0")
+      $major = [int]$versionParts[0]  # Extract the major version (e.g., 1)
+      $minor = [int]$versionParts[1]  # Extract the minor version (e.g., 0)
+      $patch = [int]$versionParts[2]  # Extract the patch version (e.g., 0)
 
-      # Split the version into components (major.minor.patch) and increment the patch version
-      # Example: For $currentVersion = "1.0.0":
-      # $versionParts = $currentVersion.Split('.') => @("1", "0", "0")
-      # $versionParts[2] = [int]$versionParts[2] + 1 increments the patch => @("1", "0", "1")
-      # $newVersion = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])" reconstructs the version => "1.0.1"
-
-      # Increment the version
-      $patch += 1  # Increment the patch version
-      if ($patch -ge 10) {
-          $patch = 0
-          $minor += 1  # Roll over to the next minor version
+      # Increment the patch version
+      $patch += 1  # Add 1 to the patch version
+      if ($patch -ge 10) {  # Check if the patch version has reached 10
+          $patch = 0  # Reset the patch version to 0
+          $minor += 1  # Increment the minor version
       }
-      if ($minor -ge 10) {
-          $minor = 0
-          $major += 1  # Roll over to the next major version
+      if ($minor -ge 10) {  # Check if the minor version has reached 10
+          $minor = 0  # Reset the minor version to 0
+          $major += 1  # Increment the major version
       }
 
-      # Construct the new version
-      $newVersion = "$major.$minor.$patch"
+      # Construct the new version string using the updated components
+      $newVersion = "$major.$minor.$patch"  # Example: "1.0.1" or "2.0.0"
 
-      # Save the new version to the file
+      # Save the updated version string to the version stamp file
       Set-Content -Path $versionStampFile -Value $newVersion
 
-      # Log the new version and set it as a pipeline variable
+      # Log the updated version for visibility in the pipeline output
       Write-Host "Version stamp updated to: $newVersion"
+
+      # Set the updated version as a pipeline variable for use in subsequent steps
       Write-Host "##vso[task.setvariable variable=versionNumber]$newVersion"
 
-
+# Step 6: Send Email Notification
 - task: PowerShell@2
   displayName: 'Send Email Notification'
   inputs:
     targetType: inline
     script: |
-      $to = "sam.albershtein@gmail.com"
-      $from = "$(EmailUsername)"
-      $subject = "Pipeline Run Status"
-      $body = "Pipeline ran successfully. New version: $(versionNumber)"
-      $smtpServer = "smtp.gmail.com"
-      $smtpPort = 587
-      $username = "$(EmailUsername)"
-      $password = "$(EmailPassword)"
-      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-      $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+      $to = "sam.albershtein@gmail.com"  # Recipient email address
+      $from = "$(EmailUsername)"  # Sender email address (from the secure variable group)
+      $subject = "Pipeline Run Status"  # Email subject line
+      $body = "Pipeline ran successfully. New version: $(versionNumber)"  # Email body with the updated version number
+      $smtpServer = "smtp.gmail.com"  # Gmail SMTP server address
+      $smtpPort = 587  # SMTP port for sending emails with TLS
+      $username = "$(EmailUsername)"  # Username for the Gmail account (from the secure variable group)
+      $password = "$(EmailPassword)"  # App-specific password for Gmail (from the secure variable group)
+      $securePassword = ConvertTo-SecureString $password -AsPlainText -Force  # Convert the password to a secure string
+      $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)  # Create a credential object
 
+      # Send the email using the configured SMTP server and credentials
       Send-MailMessage -To $to -From $from -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $credential
-  condition: succeeded()
-
+  condition: succeeded()  # Run this step only if the previous steps succeed
