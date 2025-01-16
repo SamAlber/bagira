@@ -28,9 +28,14 @@ steps:
   inputs:
     targetType: inline
     script: |
-      $versionStampFile = "C:\IT\txt.VersionStamp"
+      $versionStampFile = "C:\IT\VersionStamp.txt"
       $currentVersion = "1.0.0"
-      $newVersion = $currentVersion -replace '\d+$', { [int]$_ + 1 }
+
+      # Split the version string into parts
+      $versionParts = $currentVersion.Split('.')
+      $versionParts[2] = [int]$versionParts[2] + 1  # Increment the last part
+      $newVersion = "$($versionParts[0]).$($versionParts[1]).$($versionParts[2])"
+
       Set-Content -Path $versionStampFile -Value $newVersion
       Write-Host "Version stamp updated to: $newVersion"
       Write-Host "##vso[task.setvariable variable=versionNumber]$newVersion"
@@ -41,15 +46,16 @@ steps:
     targetType: inline
     script: |
       $to = "sam.albershtein@gmail.com"
-      $from = "$(EmailUsername)"  # Using the secure variable
+      $from = "$(EmailUsername)"
       $subject = "Pipeline Run Status"
       $body = "Pipeline ran successfully. New version: $(versionNumber)"
       $smtpServer = "smtp.gmail.com"
       $smtpPort = 587
-      $username = "$(EmailUsername)"  # Using the secure variable
-      $password = "$(EmailPassword)"  # Using the secure variable
+      $username = "$(EmailUsername)"
+      $password = "$(EmailPassword)"
       $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
       $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
 
       Send-MailMessage -To $to -From $from -Subject $subject -Body $body -SmtpServer $smtpServer -Port $smtpPort -UseSsl -Credential $credential
   condition: succeeded()
+
